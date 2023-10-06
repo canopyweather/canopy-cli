@@ -14,6 +14,7 @@ import (
 	"canopyweather.com/canopy-cli/internal/config"
 	"canopyweather.com/canopy-cli/internal/utils"
 	canopyapi "canopyweather.com/canopy-cli/pkg/api"
+	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/cobra"
 )
 
@@ -54,20 +55,25 @@ them into a single csv.`,
 
 			records := make([]canopyapi.ImpactPredictionReport, 0, len(dates))
 
+			bar := progressbar.Default(int64(len(dates)), "finding files")
+
 			for _, date := range dates {
+				bar.Add(1)
 				record, err := client.ImpactPrediction().GetByDate(date)
 				if err != nil {
-					log.Print(err)
+					log.Fatal(err)
 				}
 				if record != nil {
 					records = append(records, *record)
 				}
-				time.Sleep(100 * time.Millisecond)
+				time.Sleep(50 * time.Millisecond)
 			}
 
 			log.Printf("Total csvs being merged: %d", len(records))
+			bar2 := progressbar.Default(int64(len(records)), "compiling report")
 
 			for index, record := range records {
+				bar2.Add(1)
 				stateUrl := record.StateUrl[0]
 				if stateUrl == "" {
 					continue

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 )
 
 type ImpactPredictionReport struct {
@@ -33,6 +34,20 @@ func (i *impactPrediction) GetByDate(date string) (*ImpactPredictionReport, erro
 	}
 
 	response := i.client.executeRequest(req)
+
+	if response.StatusCode == http.StatusNotFound {
+		return nil, nil
+	}
+
+	totalRequests := 1
+	for response.StatusCode == http.StatusTooManyRequests {
+		response = i.client.executeRequest(req)
+		time.Sleep(10 * time.Millisecond)
+
+		if totalRequests > 10 {
+			break
+		}
+	}
 
 	if response.StatusCode != http.StatusOK {
 		apiError := ApiError{}
